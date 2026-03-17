@@ -10,7 +10,20 @@ plugins {
 //读取keystore.properties获取配置信息
 def keystorePropertiesFile = rootProject.file("keystore.properties")
 def keystoreProperties = new Properties()
-keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+def resolveMaybeRelativeFile = { String path ->
+    if (path == null || path.trim().isEmpty()) {
+        return null
+    }
+    def f = new File(path)
+    return f.isAbsolute() ? f : rootProject.file(path)
+}
+
+def configuredStoreFile = resolveMaybeRelativeFile(keystoreProperties.getProperty("storeFile"))
+def hasConfiguredSigning = configuredStoreFile != null && configuredStoreFile.exists()
 
 android {
     namespace "org.love2d.android.executable"
@@ -23,6 +36,9 @@ android {
         minSdk 21
         compileSdk 34
         targetSdk 34
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
         
         def getAppName = {
             def nameArray = project.properties["app.name_byte_array"]
@@ -51,10 +67,12 @@ android {
     //签名配置
     signingConfigs {
         config {
-            keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
-            storeFile file(keystoreProperties['storeFile'])
-            storePassword keystoreProperties['storePassword']
+            if (hasConfiguredSigning) {
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+                storeFile configuredStoreFile
+                storePassword keystoreProperties['storePassword']
+            }
         }
     }
 
@@ -62,14 +80,14 @@ android {
         release {
             minifyEnabled false
             debuggable false
-            signingConfig signingConfigs.config
+            signingConfig hasConfiguredSigning ? signingConfigs.config : signingConfigs.debug
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
 
         debug {
             debuggable true
             minifyEnabled false
-            signingConfig signingConfigs.config
+            signingConfig hasConfiguredSigning ? signingConfigs.config : signingConfigs.debug
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }

@@ -72,7 +72,7 @@ fun SplashScreen(navController: NavController, isFirstStart: Boolean) {
         contentAlignment = Alignment.Companion.Center
     ) {
         Image(
-            painter = painterResource(id = R.drawable.icon),
+            painter = painterResource(id = R.drawable.h_love),
             contentDescription = "Splash Logo",
             modifier = Modifier.Companion.size(200.dp), // 可根据需求设置尺寸
             contentScale = ContentScale.Companion.Fit

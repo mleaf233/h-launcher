@@ -73,7 +73,7 @@ fun AboutScreen_Scrollable() {
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.icon),
+                    painter = painterResource(id = R.drawable.h_love),
                     contentDescription = "App Icon",
                     modifier = Modifier
                         .size(120.dp)

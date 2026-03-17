@@ -126,7 +126,7 @@ class GameManagerViewModel(
                 downloadFile.delete()
             }
             downloadRepository.deleteDownload(downloadInfo)
-            _downloadStates.update { it + (downloadInfo.id to DownloadState.Idle) }
+            _downloadStates.update { it + (downloadStateKey(downloadInfo) to DownloadState.Idle) }
         }
     }
 
@@ -242,6 +242,13 @@ class GameManagerViewModel(
     // 2. 在 ViewModel 内部维护当前页码
     private var currentPage = 1
 
+    // 统一下载状态键，避免服务端返回空 id 时多个卡片状态冲突。
+    private fun downloadStateKey(mod: DownloadInfo): String {
+        if (mod.id.isNotBlank()) return mod.id
+        val fallbackRepo = if (mod.repo_id != 0) mod.repo_id.toString() else mod.github_repo_url
+        return "fallback:$fallbackRepo:${mod.name}"
+    }
+
     // 在 GameManagerViewModel 类中添加这个新方法
     private suspend fun updateDownloadStatesBasedOnLocalMods(remoteMods: List<DownloadInfo>) {
         // 获取当前游戏的ID
@@ -253,40 +260,40 @@ class GameManagerViewModel(
             return
         }
 
-        // 一次性从数据库获取当前游戏已安装的所有模组信息
-        val localMods = modRepository.getAllModByGameId(currentGameId)
-        val localModsMap = localMods.associateBy { it.id } // 转换为Map以提高查找效率
+        val previousStates = _downloadStates.value
+        // 仅保留有效 id 参与比较，避免空 id 影响所有卡片状态。
+        val localModsMap = modRepository.getAllModByGameId(currentGameId)
+            .filter { it.id.isNotBlank() }
+            .associateBy { it.id }
 
+        val nextStates = mutableMapOf<String, DownloadState>()
         remoteMods.forEach { remoteMod ->
-            // 如果当前模组正在下载中，跳过状态更新，保持Downloading状态
-            if (_downloadStates.value[remoteMod.id] is DownloadState.Downloading) {
+            val stateKey = downloadStateKey(remoteMod)
+
+            // 下载中的状态优先保留，避免列表刷新时闪回 Idle。
+            val previousState = previousStates[stateKey]
+            if (previousState is DownloadState.Downloading) {
+                nextStates[stateKey] = previousState
+                return@forEach
+            }
+
+            if (remoteMod.id.isBlank()) {
+                nextStates[stateKey] = DownloadState.Idle
                 return@forEach
             }
 
             val localMod = localModsMap[remoteMod.id]
-
-            // 检查当前游戏是否已安装此模组
-            val currentInstallMod = localMod
-
-            val newState = if (localMod == null || currentInstallMod == null) {
-                // 本地没有，就是未安装状态
+            val newState = if (localMod == null) {
                 DownloadState.Idle
+            } else if (remoteMod.version > localMod.version) {
+                DownloadState.Updatable
             } else {
-                // 本地有，需要比对版本号
-                // 注意：这里的版本号比较直接使用字符串对比，对于 "10.0" vs "9.0" 可能会出错。
-                // 建议引入一个专门的版本号比较库（如 SemVer）来确保比较的准确性。
-                Log.e("HJR", "remoteMod.version = ${remoteMod.version} localMod.version = ${localMod.version}")
-                Log.e("HJR", "localMod.version = ${localMod.version} currentInstallMod.version = ${currentInstallMod.version}")
-                if (remoteMod.version > localMod.version) {
-                    DownloadState.Updatable // 远程版本 > 本地版本，可更新
-                } else if (localMod.version > currentInstallMod.version) {
-                    DownloadState.Updatable // 远程版本 > 本地版本，可更新
-                } else {
-                    DownloadState.Installed // 否则，视为已安装
-                }
+                DownloadState.Installed
             }
-            _downloadStates.update { it + (remoteMod.id to newState) }
+            nextStates[stateKey] = newState
         }
+
+        _downloadStates.value = nextStates
     }
 
     // 3. 修改 getModList 方法，让它处理分页逻辑
@@ -448,8 +455,9 @@ class GameManagerViewModel(
     // 在 GameManagerViewModel.kt 文件中
 
     fun downloadMod(mod: DownloadInfo, context: Context) {
+        val stateKey = downloadStateKey(mod)
         // 1. 如果当前模组已在下载中，则直接返回，防止重复操作
-        if (_downloadStates.value[mod.id] is DownloadState.Downloading) {
+        if (_downloadStates.value[stateKey] is DownloadState.Downloading) {
             Toast.makeText(context, "${mod.name} 正在下载中...", Toast.LENGTH_SHORT).show()
             return
         }
@@ -478,7 +486,7 @@ class GameManagerViewModel(
 
             try {
                 // 3. 立即更新UI状态为“下载中”
-                _downloadStates.update { it + (mod.id to DownloadState.Downloading(0f)) }
+                _downloadStates.update { it + (stateKey to DownloadState.Downloading(0f)) }
 
                 // 4. 执行网络请求，下载模组文件
                 val response = RetrofitClient.api.downloadMod(mod.id)
@@ -544,10 +552,10 @@ class GameManagerViewModel(
 
                     // 6. 更新最终UI状态
                     // 先短暂显示“成功”，给用户一个即时反馈
-                    _downloadStates.update { it + (mod.id to DownloadState.Success) }
+                    _downloadStates.update { it + (stateKey to DownloadState.Success) }
                     // 延迟2秒后，设置为持久的“已安装”状态
                     kotlinx.coroutines.delay(2000)
-                    _downloadStates.update { it + (mod.id to DownloadState.Installed) }
+                    _downloadStates.update { it + (stateKey to DownloadState.Installed) }
 
                 } else {
                     // 网络请求失败
@@ -557,7 +565,7 @@ class GameManagerViewModel(
             } catch (e: Exception) {
                 // 7. 捕获所有异常，更新UI状态为“失败”
                 e.printStackTrace()
-                _downloadStates.update { it + (mod.id to DownloadState.Error(e.message ?: "未知错误")) }
+                _downloadStates.update { it + (stateKey to DownloadState.Error(e.message ?: "未知错误")) }
             } finally {
                 // 8. 在 finally 块中确保关闭所有流
                 inputStream?.close()

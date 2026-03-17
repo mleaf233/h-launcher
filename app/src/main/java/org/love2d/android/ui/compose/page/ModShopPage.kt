@@ -34,9 +34,8 @@ import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -120,6 +119,13 @@ fun ModShopPage(viewModel: GameManagerViewModel, query: String, sort: String) {
         )
     }
 }
+
+private fun downloadStateKey(mod: DownloadInfo): String {
+    if (mod.id.isNotBlank()) return mod.id
+    val fallbackRepo = if (mod.repo_id != 0) mod.repo_id.toString() else mod.github_repo_url
+    return "fallback:$fallbackRepo:${mod.name}"
+}
+
 @Composable
 fun EnhancedModShopCard(
     mod: DownloadInfo,
@@ -169,10 +175,12 @@ fun EnhancedModShopCard(
         // 元数据
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Bottom
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 MetadataItem(icon = Icons.Outlined.Info, text = "版本 ${mod.version}")
                 if (sort == "stars") {
                     MetadataItem(icon = Icons.Filled.Star, text = "${mod.stars} 星")
@@ -181,6 +189,8 @@ fun EnhancedModShopCard(
                 }
                 MetadataItem(icon = Icons.Outlined.History, text = "更新于: ${mod.updated_at}")
             }
+
+            Spacer(modifier = Modifier.width(12.dp))
 
             Box(
                 modifier = Modifier.size(48.dp), // 给一个固定大小，避免UI跳动
@@ -195,14 +205,14 @@ fun EnhancedModShopCard(
                     }
 
                     is DownloadState.Updatable -> {
-                        IconButton(
+                        FilledTonalIconButton(
                             onClick = { onInstallClick(mod) },
-                            modifier = Modifier.background(
-                                color = FloatingActionButtonDefaults.containerColor,
-                                shape = FloatingActionButtonDefaults.extendedFabShape,
-                            )
+                            modifier = Modifier.size(40.dp)
                         ) {
-                            Icon(Icons.Filled.Update, contentDescription = "更新")
+                            Icon(
+                                Icons.Filled.Update,
+                                contentDescription = "更新"
+                            )
                         }
                     }
 
@@ -224,16 +234,16 @@ fun EnhancedModShopCard(
                         )
                     }
 
-                    else -> {
+                    is DownloadState.Idle, is DownloadState.Error -> {
                         // 默认状态 (Idle) 或失败状态 (Error)，显示下载按钮
-                        IconButton(
+                        FilledTonalIconButton(
                             onClick = { onInstallClick(mod) },
-                            modifier = Modifier.background(
-                                color = FloatingActionButtonDefaults.containerColor,
-                                shape = FloatingActionButtonDefaults.extendedFabShape,
-                            )
+                            modifier = Modifier.size(40.dp)
                         ) {
-                            Icon(Icons.Filled.Download, contentDescription = "下载")
+                            Icon(
+                                Icons.Filled.Download,
+                                contentDescription = "下载"
+                            )
                         }
                     }
                 }
@@ -384,7 +394,7 @@ private fun ModListContent(
 
                         val mod = mods[index]
                         // 4. 为每个模组查找其对应的下载状态，如果不存在则默认为 Idle
-                        val downloadState = downloadStates[mod.id] ?: DownloadState.Idle
+                        val downloadState = downloadStates[downloadStateKey(mod)] ?: DownloadState.Idle
 
                         EnhancedModShopCard(
                             mod = mod,

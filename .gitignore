@@ -18,6 +18,7 @@ local.properties
 
 # Downloaded gradle wrapper
 .gradle
+.gradle-home
 
 # Android Studio project files
 .idea
