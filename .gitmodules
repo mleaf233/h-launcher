@@ -1,3 +1,6 @@
 [submodule "love/src/jni/love"]
 	path = love/src/jni/love
-	url = git@github.com:a2639443196/love-balatro.git
+	url = https://github.com/mleaf233/love-balatro.git
+[submodule "love/src/jni/lua-modules/lua-https"]
+	path = love/src/jni/lua-modules/lua-https
+	url = https://github.com/mleaf233/lua-https.git

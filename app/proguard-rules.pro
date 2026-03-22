@@ -17,6 +17,7 @@
 #}
 
 -keep class org.love2d.android.entry.GameActivity { *; }
+-keep class org.love2d.luahttps.LuaHTTPS { *; }
 -keep class org.libsdl.app.** { *; }
 
 -dontwarn com.jeremyliao.liveeventbus.**

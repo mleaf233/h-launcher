@@ -23,6 +23,7 @@ local.properties
 # Android Studio project files
 .idea
 *.iml
+.android-home
 
 # Gradle build files
 build

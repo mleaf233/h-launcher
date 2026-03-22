@@ -713,7 +713,7 @@ public class GameActivity extends SDLActivity {
         ApplicationInfo applicationInfo = getApplicationInfo();
 
         if (isNativeLibsExtracted()) {
-            return applicationInfo.nativeLibraryDir + "/?.so";
+            return applicationInfo.nativeLibraryDir + "/lib?.so";
         } else {
             // The native libs are inside the APK and can be loaded directly.
             // FIXME: What about split APKs?
@@ -727,7 +727,7 @@ public class GameActivity extends SDLActivity {
                 abi = android.os.Build.CPU_ABI;
             }
 
-            return applicationInfo.sourceDir + "!/lib/" + abi + "/?.so";
+            return applicationInfo.sourceDir + "!/lib/" + abi + "/lib?.so";
         }
     }
 }

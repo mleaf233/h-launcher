@@ -30,6 +30,34 @@ git submodule update --init --force --recursive
 
 In the repository directory. For the last command, add `--depth 1` if needed.
 
+Project-specific submodule notes:
+---------------------------------
+
+This repository also pins:
+
+* `love/src/jni/lua-modules/lua-https` from https://github.com/love2d/lua-https
+
+After syncing submodules and building, you can verify required native libraries in the generated APK:
+
+```
+powershell -ExecutionPolicy Bypass -File .\script\verify-apk-libs.ps1
+```
+
+To verify a specific APK path:
+
+```
+powershell -ExecutionPolicy Bypass -File .\script\verify-apk-libs.ps1 -ApkPath .\app\build\outputs\apk\normalRecord\release\app-normal-record-release.apk
+```
+
+When upgrading `lua-https`, update the submodule pointer to a specific commit (do not float on branch tip):
+
+```
+git submodule update --init --recursive
+git -C love/src/jni/lua-modules/lua-https fetch --tags
+git -C love/src/jni/lua-modules/lua-https checkout <commit>
+git add .gitmodules love/src/jni/lua-modules/lua-https
+```
+
 Instructions:
 -------------
 
