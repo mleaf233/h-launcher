@@ -7,8 +7,11 @@ plugins {
     id 'kotlin-parcelize'
 }
 
-//读取keystore.properties获取配置信息
-def keystorePropertiesFile = rootProject.file("keystore.properties")
+// 优先读取本地私有签名配置，缺失时回退到仓库模板
+def keystorePropertiesFile = rootProject.file("keystore.properties.local")
+if (!keystorePropertiesFile.exists()) {
+    keystorePropertiesFile = rootProject.file("keystore.properties")
+}
 def keystoreProperties = new Properties()
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
