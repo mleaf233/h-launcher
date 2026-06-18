@@ -3,8 +3,12 @@ bin/
 gen/
 libs/
 obj/
+out/
 
 local.properties
+keystore.properties.local
+keystore/
+!keystore/.gitkeep
 
 .*.swp
 .*~
