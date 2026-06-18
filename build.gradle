@@ -20,6 +20,13 @@ buildscript {
     }
 }
 
+def configuredBuildDir = findProperty("buildDirName") ?: 'out'
+rootProject.buildDir = configuredBuildDir
+
+subprojects {
+    buildDir = "${rootProject.buildDir}/${project.name}"
+}
+
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
