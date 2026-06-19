@@ -17,28 +17,27 @@ Copyright (c) 2006-2024 LOVE Development Team
 
 自动化构建打包正在施工中，前往 QQ群下载：755944835
 
-重要说明
---------
+说明
+----
 
-如果你要从源码构建，必须同步子模块。常见报错包括缺失 `liblove.so`，或者构建时提示 `Missing LÖVE`。推荐的克隆方式：
+* 本仓库基于上游仓库Fork而来，更详细的官方说明见[官方wiki](https://github.com/love2d/love-android/wiki)
+* 本仓库不含游戏源代码、游戏美术、游戏音频等版权资源
+* 如果你要从源码构建，必须同步子模块。常见报错包括缺失 `liblove.so`，或者构建时提示 `Missing LÖVE`。推荐的克隆方式：
 
 ```bash
 git clone --recurse-submodules https://github.com/mleaf233/h-launcher.git
 ```
 
-如有需要，可以额外带上 `-b <branch/tag>` 和 `--depth 1`。
+* 如有需要，可以额外带上 `-b <branch/tag>` 和 `--depth 1`。
 
-如果仓库已经克隆，但忘了初始化子模块，在仓库根目录执行：
+* 如果仓库已经克隆，但忘了初始化子模块，在仓库根目录执行（最后一条命令按需可加 `--depth 1`）：
 
 ```bash
 git submodule sync --recursive
 git submodule update --init --force --recursive
 ```
 
-最后一条命令按需可加 `--depth 1`。
-
-项目特定子模块说明
-------------------
+### 子模块说明
 
 本仓库还固定了：
 
@@ -65,10 +64,7 @@ git -C love/src/jni/lua-modules/lua-https checkout <commit>
 git add .gitmodules love/src/jni/lua-modules/lua-https
 ```
 
-说明
-----
 
-本仓库基于上游仓库Fork而来，更详细的官方说明见：https://github.com/love2d/love-android/wiki
 
 快速开始
 --------

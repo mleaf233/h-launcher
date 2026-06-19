@@ -18,29 +18,27 @@ Download
 
 Automated packaging is still in progress. Download builds from QQ group: `755944835`
 
-Important
----------
+Notes
+-----
 
-If you want to build from source, you must sync submodules. Common failures include missing
-`liblove.so` or `Missing LÖVE` during native build. Recommended clone command:
+* This repository is forked from the upstream project. For more complete upstream documentation, see the [official wiki](https://github.com/love2d/love-android/wiki)
+* This repository does not include game source code, game art, game audio, or other copyrighted game assets
+* If you want to build from source, you must sync submodules. Common failures include missing `liblove.so` or `Missing LÖVE` during native build. Recommended clone command:
 
 ```bash
 git clone --recurse-submodules https://github.com/mleaf233/h-launcher.git
 ```
 
-Add `-b <branch/tag>` and `--depth 1` if needed.
+* Add `-b <branch/tag>` and `--depth 1` if needed.
 
-If you already cloned the repository but forgot to initialize submodules, run this in the repository root:
+* If you already cloned the repository but forgot to initialize submodules, run the following in the repository root. Add `--depth 1` to the last command if needed:
 
 ```bash
 git submodule sync --recursive
 git submodule update --init --force --recursive
 ```
 
-Add `--depth 1` to the last command if needed.
-
-Project-specific submodule notes
---------------------------------
+### Submodule Notes
 
 This repository also pins:
 
@@ -67,17 +65,11 @@ git -C love/src/jni/lua-modules/lua-https checkout <commit>
 git add .gitmodules love/src/jni/lua-modules/lua-https
 ```
 
-Notes
------
-
-This repository is forked from the upstream project. For more complete upstream documentation, see:
-https://github.com/love2d/love-android/wiki
 
 Quick Start
 -----------
 
-Install `JDK 17` before you start. Do not use a version newer or older than 17. If you build with Android Studio,
-you can use the bundled JDK 17.
+Install `JDK 17` before you start. Do not use a version newer or older than 17. If you build with Android Studio, you can use the bundled JDK 17.
 
 Install Android SDK `34` and Android NDK `25.2.9519653`, set `ANDROID_SDK_ROOT`, then run:
 
@@ -96,7 +88,7 @@ Windows Build
 1. If `ANDROID_SDK_ROOT` is not configured globally, create `local.properties` in the repository root:
 
 ```properties
-sdk.dir=D:\\86133\\Android\\Sdk
+sdk.dir=D:\\Android\\Sdk
 ```
 
 2. Initialize submodules before building, otherwise native build fails with:
@@ -172,8 +164,7 @@ If you want to embed the game directly into the APK, choose one of these approac
 1. Put all game files in `app/src/embed/assets`, with `main.lua` at `app/src/embed/assets/main.lua`.
 2. Put your packaged `*.love` file in `app/src/embed/assets` and name it `game.love`.
 
-Then update the application ID, version code, version name, display name, and icons. See
-[Game Packaging Wiki](https://github.com/love2d/love-android/wiki/Game-Packaging).
+Then update the application ID, version code, version name, display name, and icons. See [Game Packaging Wiki](https://github.com/love2d/love-android/wiki/Game-Packaging).
 
 After that, run:
 
@@ -187,9 +178,7 @@ To generate an AAB for Play Store upload, run:
 - `gradlew bundleEmbedNoRecordRelease`
 - or `gradlew bundleEmbedRecordRelease`
 
-Alternatively, you can install Android Studio **2022.3.1** or later. On first launch, open SDK Manager,
-go to the "SDK Tools" tab, enable "Show Package Details", then install NDK (Side By Side) version `25.2.9519653`.
-After that, open the repository root.
+Alternatively, you can install Android Studio **2022.3.1** or later. On first launch, open SDK Manager, go to the "SDK Tools" tab, enable "Show Package Details", then install NDK (Side By Side) version `25.2.9519653`. After that, open the repository root.
 
 Note: The older embed + APKTool approach is no longer the preferred path because Google distribution requirements have changed.
 
@@ -199,11 +188,11 @@ Issues
 Submit bugs or feature requests to:
 
 * https://github.com/mleaf233/h-launcher/issues
+
 * https://github.com/love2d/love-android/issues - LÖVE-Android-specific issues
 * https://github.com/love2d/love/issues - LÖVE issues in general
 
 License
 -------
 
-This project contains code from multiple projects under different licenses. See LOVE's
-[license.txt](https://github.com/love2d/love/blob/master/license.txt) for details.
+This project contains code from multiple projects under different licenses. See LOVE's [license.txt](https://github.com/love2d/love/blob/master/license.txt) for details.
