@@ -1,7 +1,7 @@
 <div align="center">
     <h1> H Launcher </h1>
     <p>🩷 Balatro的安卓启动器 </p>
-    <p><a href="https://github.com/mleaf233/h-launcher/blob/master/README-EN.md">English</a> &nbsp;&nbsp; 简体中文</p>
+    <p><a href="https://github.com/mleaf233/h-launcher/blob/master/README.md">English</a> &nbsp;&nbsp; 简体中文</p>
 </div>
 
 ## 介绍
