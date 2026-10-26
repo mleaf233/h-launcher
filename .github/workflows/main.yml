@@ -46,6 +46,7 @@ jobs:
       - name: Install NDK 25.2.9519653
         shell: pwsh
         run: |
+          "y`ny`ny`ny`ny`ny`ny`n" | sdkmanager --licenses | Out-Null
           sdkmanager "ndk;25.2.9519653"
           "ANDROID_NDK_HOME=$env:ANDROID_SDK_ROOT\ndk\25.2.9519653" |
             Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
