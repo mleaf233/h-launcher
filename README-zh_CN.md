@@ -37,11 +37,11 @@ git submodule sync --recursive
 git submodule update --init --force --recursive
 ```
 
-### 子模块说明
+## 子模块
 
-本仓库把所有第三方依赖都做成了 git submodule，**主仓库不再存放任何第三方源码**，只固定提交号：
+所有第三方依赖都是 git submodule，主仓库不含第三方源码，只固定提交号：
 
-| 路径 | 上游仓库 | 固定版本 |
+| 路径 | 上游 | 版本 |
 | --- | --- | --- |
 | `love/src/jni/SDL2` | libsdl-org/SDL | `release-2.28.5` |
 | `love/src/jni/freetype2` | freetype/freetype | `VER-2-8-1` |
@@ -52,136 +52,45 @@ git submodule update --init --force --recursive
 | `love/src/jni/libtheora-1.2.0alpha1` | xiph/theora | `v1.2.0alpha1` |
 | `love/src/jni/libmodplug-0.8.8.4` | Konstanty/libmodplug | `edab762` |
 | `love/src/jni/mpg123-1.17.0` | madebr/mpg123 | `e58b7fd` |
-| `love/src/jni/LuaJIT-2.1` | mleaf233/LuaJIT（`android-lovely` 分支） | 见下 |
+| `love/src/jni/LuaJIT-2.1` | mleaf233/LuaJIT（`android-lovely`） | 本项目 fork |
 | `love/src/jni/love` | mleaf233/love-balatro | `7dd48f26` |
 | `love/src/jni/lua-modules/lua-https` | mleaf233/lua-https | `f4631eb` |
 
-> `LuaJIT-2.1` 是本项目自己的 fork，`android-lovely` 分支上打了 lovely 注入层补丁
-> （`crates/liblovely/luajit.patch` 来自 lovely-injector）。不要换成上游 LuaJIT/LuaJIT，
-> 否则 mod 加载会静默失效。
+`LuaJIT-2.1` 是本项目 fork，`android-lovely` 分支带 lovely 注入补丁。换成上游 LuaJIT 会让 mod 静默失效。
 
-因为上游这些库都不提供可用的 `Android.mk`（SDL2 自带的那个会和本项目冲突），
-构建脚本统一放在 `love/src/jni/mk/` 下，各自把 `LOCAL_PATH` 指回对应的 submodule；
-上游没有、但编译必需的文件（`config.h`、`hrtf_default.h`、`SDLActivity.java` 等）
-放在 `love/src/jni/patches/` 和 `love/src/sdl-java/` 下。
+上游都不提供可用的 `Android.mk`，所以构建脚本在 `love/src/jni/mk/`；上游缺失但编译必需的文件在 `love/src/jni/patches/` 和 `love/src/sdl-java/`。
 
-### LuaJIT 预编译静态库（构建前必做）
+## 构建
 
-`libluajit.a` 约 18 MB，已经合并了 Rust 侧的 lovely 核心，**不进版本库**（`.gitignore` 里有 `*.a`）。
-所以 clone 完不能直接构建，必须先自己生成一次：
+需要 JDK 17、Android SDK 34、NDK `25.2.9519653`、VS2022、Rust nightly。
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\love\src\jni\LuaJIT-2.1\build_android.ps1
-```
-
-产物：`love/src/jni/LuaJIT-2.1/android/arm64-v8a/libluajit.a`
-
-前置条件（缺一不可）：
-
-- **Windows**（脚本用 MSVC 编译 LuaJIT 的 host 工具 `minilua` / `buildvm`，目前只验证了 Windows）
-- **Visual Studio 2022**（提供 MSVC）
-- **Android NDK `25.2.9519653`**（提供交叉编译器，以及 GNU make）
-- **Rust nightly** 和 android target：
-
-```powershell
-rustup toolchain install nightly
-rustup target add aarch64-linux-android --toolchain nightly
-```
-
-脚本会依次做：编译 host 工具 → 生成 `luajit.h` / `buildvm_arch.h` → 交叉编译 `libluajit.a`
-→ `cargo build -p liblovely` → 把两者合并成一个归档。中间某步失败会直接报错退出。
-
-
-同步子模块并完成构建后，可以校验 APK 中是否包含必需的 native 库：
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\script\verify-apk-libs.ps1
-```
-
-如果要校验指定 APK：
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\script\verify-apk-libs.ps1 -ApkPath .\out\app\outputs\apk\normalRecord\release\app-normal-record-release.apk
-```
-
-如果要升级 `lua-https`，请将子模块固定到具体提交，而不是浮动在分支最新提交：
-
-```bash
-git submodule update --init --recursive
-git -C love/src/jni/lua-modules/lua-https fetch --tags
-git -C love/src/jni/lua-modules/lua-https checkout <commit>
-git add .gitmodules love/src/jni/lua-modules/lua-https
-```
-
-
-
-快速开始
---------
-
-开始前请安装 `JDK 17`。不能高于 17，也不能低于 17。如果你使用 Android Studio 构建，可以直接用它内置的 JDK 17。
-
-安装 Android SDK `34` 和 Android NDK `25.2.9519653`，配置好 `ANDROID_SDK_ROOT` 后执行：
-
-```bash
-# 1. 同步子模块（12 个，必须）
+# 1. 子模块
 git submodule update --init --recursive
 
-# 2. 生成 LuaJIT 预编译库（只需做一次，详见上一节）
+# 2. 生成 LuaJIT 静态库（只需一次）
 powershell -ExecutionPolicy Bypass -File .\love\src\jni\LuaJIT-2.1\build_android.ps1
 
-# 3. 构建
-./gradlew assembleNormalRecord
+# 3. 出包
+.\gradlew.bat assembleNormalRecordRelease
 ```
 
-**跳过第 2 步会直接失败**，链接阶段会报 `cannot find -lluajit` 或一堆 `lovely_*` 未定义符号。
+产物：`out/app/outputs/apk/normalRecord/release/H.apk`
 
-正常情况下，会在 `app/build/outputs/apk/normalRecord` 下得到 APK。`normalRecord` 就是通常下载到的 APK 变体。
+- 第 2 步不能跳过，否则链接报 `cannot find -lluajit` 或 `lovely_*` 未定义。
+- 换架构：脚本加 `-Abi armeabi-v7a`，gradle 加 `-PtargetAbi=armeabi-v7a`。
+- 没配 `ANDROID_SDK_ROOT` 时，根目录建 `local.properties` 写 `sdk.dir=D:\Android\Sdk`。
+- 输出目录固定在 `out/`，避免 Windows 路径过长导致资源编译失败。
+- 子模块没初始化时报 `Missing LOVE`。
 
-本仓库在 Windows 上已经实际验证过以下构建方式。
+## 持续集成
 
-Windows 构建
-----------------
+`.github/workflows/main.yml`：
 
-1. 如果系统没有全局配置 `ANDROID_SDK_ROOT`，就在仓库根目录创建 `local.properties`：
+- 手动触发或推 `v*` tag 时，按架构并行构建 release APK。
+- 每个架构上传工件 `H-<abi>`，保留 1 天。
+- 推 tag 或手动勾选 release 时，创建 Release 并附上 `H-<abi>.apk`。
 
-```properties
-sdk.dir=D:\\Android\\Sdk
-```
-
-2. 构建前必须初始化子模块，否则 native 构建会报错：
-
-```text
-Missing LOVE. Make sure to initialize the submodule correctly!
-```
-
-执行命令：
-
-```powershell
-git submodule update --init --recursive
-```
-
-3. 本仓库将 Gradle 构建输出目录固定到本地 `out/`，目的有两个：
-
-- 所有临时编译产物都保留在当前项目目录内。
-- 避免 Windows 下默认 `app/build/intermediates/...` 路径过长，导致资源编译失败。
-
-4. 已验证可用的 Windows 构建命令：
-
-```powershell
-.\gradlew.bat clean assembleNormalRecord --console=plain
-```
-
-5. 已验证的 release APK 输出路径：
-
-```text
-out/app/outputs/apk/normalRecord/release/app-normal-record-release.apk
-```
-
-对应的 debug APK：
-
-```text
-out/app/outputs/apk/normalRecord/debug/app-normal-record-debug.apk
-```
 
 正式签名
 --------

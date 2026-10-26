@@ -38,12 +38,12 @@ git submodule sync --recursive
 git submodule update --init --force --recursive
 ```
 
-### Submodule Notes
+## Submodules
 
-Every third-party dependency is a git submodule. **The main repository stores no third-party
-source code**, only pinned commit IDs:
+Every third-party dependency is a git submodule. The main repository holds no third-party
+source code, only pinned commit IDs:
 
-| Path | Upstream | Pinned ref |
+| Path | Upstream | Pinned |
 | --- | --- | --- |
 | `love/src/jni/SDL2` | libsdl-org/SDL | `release-2.28.5` |
 | `love/src/jni/freetype2` | freetype/freetype | `VER-2-8-1` |
@@ -54,137 +54,48 @@ source code**, only pinned commit IDs:
 | `love/src/jni/libtheora-1.2.0alpha1` | xiph/theora | `v1.2.0alpha1` |
 | `love/src/jni/libmodplug-0.8.8.4` | Konstanty/libmodplug | `edab762` |
 | `love/src/jni/mpg123-1.17.0` | madebr/mpg123 | `e58b7fd` |
-| `love/src/jni/LuaJIT-2.1` | mleaf233/LuaJIT (`android-lovely` branch) | see below |
+| `love/src/jni/LuaJIT-2.1` | mleaf233/LuaJIT (`android-lovely`) | this project's fork |
 | `love/src/jni/love` | mleaf233/love-balatro | `7dd48f26` |
 | `love/src/jni/lua-modules/lua-https` | mleaf233/lua-https | `f4631eb` |
 
-> `LuaJIT-2.1` is this project's own fork. The `android-lovely` branch carries the lovely
-> injection patch (`crates/liblovely/luajit.patch` from lovely-injector). Do not swap it for
-> upstream LuaJIT/LuaJIT, or mod loading will silently stop working.
+`LuaJIT-2.1` is this project's fork; the `android-lovely` branch carries the lovely injection
+patch. Swapping it for upstream LuaJIT silently breaks mod loading.
 
-None of these upstreams ship a usable `Android.mk` (SDL2's own one conflicts with ours), so the
-build scripts live in `love/src/jni/mk/`, each pointing `LOCAL_PATH` back at its submodule.
-Files that upstream does not provide but the build needs (`config.h`, `hrtf_default.h`,
-`SDLActivity.java`, ...) live in `love/src/jni/patches/` and `love/src/sdl-java/`.
+None of the upstreams ship a usable `Android.mk`, so build scripts live in `love/src/jni/mk/`.
+Files upstream does not provide but the build needs live in `love/src/jni/patches/` and
+`love/src/sdl-java/`.
 
-### Prebuilt LuaJIT static library (required before building)
+## Build
 
-`libluajit.a` is ~18 MB and already contains the merged Rust lovely core. **It is not committed**
-(`*.a` is in `.gitignore`), so a fresh clone cannot build until you generate it once:
+Requires JDK 17, Android SDK 34, NDK `25.2.9519653`, VS2022, Rust nightly.
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\love\src\jni\LuaJIT-2.1\build_android.ps1
-```
-
-Output: `love/src/jni/LuaJIT-2.1/android/arm64-v8a/libluajit.a`
-
-Prerequisites (all required):
-
-- **Windows** — the script compiles LuaJIT's host tools (`minilua` / `buildvm`) with MSVC;
-  only Windows has been verified
-- **Visual Studio 2022** (MSVC)
-- **Android NDK `25.2.9519653`** (cross compiler plus GNU make)
-- **Rust nightly** with the android target:
-
-```powershell
-rustup toolchain install nightly
-rustup target add aarch64-linux-android --toolchain nightly
-```
-
-The script builds the host tools, generates `luajit.h` / `buildvm_arch.h`, cross-compiles
-`libluajit.a`, runs `cargo build -p liblovely`, and merges both into a single archive.
-
-After syncing submodules and building, you can verify that the generated APK contains the required native libraries:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\script\verify-apk-libs.ps1
-```
-
-To verify a specific APK:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\script\verify-apk-libs.ps1 -ApkPath .\out\app\outputs\apk\normalRecord\release\app-normal-record-release.apk
-```
-
-If you upgrade `lua-https`, pin the submodule to a specific commit instead of floating on branch head:
-
-```bash
-git submodule update --init --recursive
-git -C love/src/jni/lua-modules/lua-https fetch --tags
-git -C love/src/jni/lua-modules/lua-https checkout <commit>
-git add .gitmodules love/src/jni/lua-modules/lua-https
-```
-
-
-Quick Start
------------
-
-Install `JDK 17` before you start. Do not use a version newer or older than 17. If you build with Android Studio, you can use the bundled JDK 17.
-
-Install Android SDK `34` and Android NDK `25.2.9519653`, set `ANDROID_SDK_ROOT`, then run:
-
-```bash
-# 1. Sync the 12 submodules (required)
+# 1. Submodules
 git submodule update --init --recursive
 
-# 2. Generate the prebuilt LuaJIT static library (once, see previous section)
+# 2. Build the LuaJIT static library (once)
 powershell -ExecutionPolicy Bypass -File .\love\src\jni\LuaJIT-2.1\build_android.ps1
 
-# 3. Build
-./gradlew assembleNormalRecord
+# 3. Build the APK
+.\gradlew.bat assembleNormalRecordRelease
 ```
 
-**Skipping step 2 fails the build** — linking reports `cannot find -lluajit` or a pile of
-undefined `lovely_*` symbols.
+Output: `out/app/outputs/apk/normalRecord/release/H.apk`
 
-Under normal conditions, this generates an APK in `app/build/outputs/apk/normalRecord`.
-`normalRecord` is the standard APK variant.
+- Step 2 is mandatory, otherwise linking fails with `cannot find -lluajit` or undefined `lovely_*`.
+- Other ABIs: pass `-Abi armeabi-v7a` to the script and `-PtargetAbi=armeabi-v7a` to Gradle.
+- Without `ANDROID_SDK_ROOT`, create `local.properties` with `sdk.dir=D:\Android\Sdk`.
+- Build output is pinned to `out/` to avoid Windows path-length failures.
+- A missing submodule checkout fails with `Missing LOVE`.
 
-The following Windows flow has been verified in this repository.
+## Continuous Integration
 
-Windows Build
--------------
+`.github/workflows/main.yml`:
 
-1. If `ANDROID_SDK_ROOT` is not configured globally, create `local.properties` in the repository root:
+- Runs on manual dispatch or a `v*` tag, building the release APK per ABI in parallel.
+- Uploads an `H-<abi>` artifact per ABI, kept for 1 day.
+- On a tag (or when `release` is checked), creates a Release with `H-<abi>.apk` attached.
 
-```properties
-sdk.dir=D:\\Android\\Sdk
-```
-
-2. Initialize submodules before building, otherwise native build fails with:
-
-```text
-Missing LOVE. Make sure to initialize the submodule correctly!
-```
-
-Run:
-
-```powershell
-git submodule update --init --recursive
-```
-
-3. This repository writes Gradle build output to local `out/` for two reasons:
-
-- All temporary build artifacts stay inside the current project directory.
-- It avoids Windows path-length failures in the default `app/build/intermediates/...` resource pipeline.
-
-4. Verified Windows build command:
-
-```powershell
-.\gradlew.bat clean assembleNormalRecord --console=plain
-```
-
-5. Verified release APK output path:
-
-```text
-out/app/outputs/apk/normalRecord/release/app-normal-record-release.apk
-```
-
-Corresponding debug APK:
-
-```text
-out/app/outputs/apk/normalRecord/debug/app-normal-record-debug.apk
-```
 
 Release Signing
 ---------------

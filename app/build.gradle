@@ -50,7 +50,8 @@ android {
         compileSdk 34
         targetSdk 34
         ndk {
-            abiFilters 'arm64-v8a'
+            // CI 用 -PtargetAbi=armeabi-v7a 之类的参数按架构分开编译，默认 arm64-v8a
+            abiFilters(project.findProperty("targetAbi") ?: "arm64-v8a")
         }
         
         def getAppName = {
@@ -143,6 +144,15 @@ android {
 
     lint {
         abortOnError false
+    }
+}
+
+// 产物统一叫 H.apk（各架构由 CI 分别构建，文件名靠 artifact/release 那层区分）
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        variant.outputs.each { output ->
+            output.outputFileName.set("H.apk")
+        }
     }
 }
 
