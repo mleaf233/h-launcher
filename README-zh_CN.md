@@ -39,9 +39,58 @@ git submodule update --init --force --recursive
 
 ### 子模块说明
 
-本仓库还固定了：
+本仓库把所有第三方依赖都做成了 git submodule，**主仓库不再存放任何第三方源码**，只固定提交号：
 
-* `love/src/jni/lua-modules/lua-https`，来源于 https://github.com/love2d/lua-https
+| 路径 | 上游仓库 | 固定版本 |
+| --- | --- | --- |
+| `love/src/jni/SDL2` | libsdl-org/SDL | `release-2.28.5` |
+| `love/src/jni/freetype2` | freetype/freetype | `VER-2-8-1` |
+| `love/src/jni/openal-soft` | kcat/openal-soft | `1.21.0` |
+| `love/src/jni/oboe` | google/oboe | `1.4.3` |
+| `love/src/jni/libogg-1.3.2` | xiph/ogg | `v1.3.2` |
+| `love/src/jni/libvorbis-1.3.5` | xiph/vorbis | `v1.3.5` |
+| `love/src/jni/libtheora-1.2.0alpha1` | xiph/theora | `v1.2.0alpha1` |
+| `love/src/jni/libmodplug-0.8.8.4` | Konstanty/libmodplug | `edab762` |
+| `love/src/jni/mpg123-1.17.0` | madebr/mpg123 | `e58b7fd` |
+| `love/src/jni/LuaJIT-2.1` | mleaf233/LuaJIT（`android-lovely` 分支） | 见下 |
+| `love/src/jni/love` | mleaf233/love-balatro | `7dd48f26` |
+| `love/src/jni/lua-modules/lua-https` | mleaf233/lua-https | `f4631eb` |
+
+> `LuaJIT-2.1` 是本项目自己的 fork，`android-lovely` 分支上打了 lovely 注入层补丁
+> （`crates/liblovely/luajit.patch` 来自 lovely-injector）。不要换成上游 LuaJIT/LuaJIT，
+> 否则 mod 加载会静默失效。
+
+因为上游这些库都不提供可用的 `Android.mk`（SDL2 自带的那个会和本项目冲突），
+构建脚本统一放在 `love/src/jni/mk/` 下，各自把 `LOCAL_PATH` 指回对应的 submodule；
+上游没有、但编译必需的文件（`config.h`、`hrtf_default.h`、`SDLActivity.java` 等）
+放在 `love/src/jni/patches/` 和 `love/src/sdl-java/` 下。
+
+### LuaJIT 预编译静态库（构建前必做）
+
+`libluajit.a` 约 18 MB，已经合并了 Rust 侧的 lovely 核心，**不进版本库**（`.gitignore` 里有 `*.a`）。
+所以 clone 完不能直接构建，必须先自己生成一次：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\love\src\jni\LuaJIT-2.1\build_android.ps1
+```
+
+产物：`love/src/jni/LuaJIT-2.1/android/arm64-v8a/libluajit.a`
+
+前置条件（缺一不可）：
+
+- **Windows**（脚本用 MSVC 编译 LuaJIT 的 host 工具 `minilua` / `buildvm`，目前只验证了 Windows）
+- **Visual Studio 2022**（提供 MSVC）
+- **Android NDK `25.2.9519653`**（提供交叉编译器，以及 GNU make）
+- **Rust nightly** 和 android target：
+
+```powershell
+rustup toolchain install nightly
+rustup target add aarch64-linux-android --toolchain nightly
+```
+
+脚本会依次做：编译 host 工具 → 生成 `luajit.h` / `buildvm_arch.h` → 交叉编译 `libluajit.a`
+→ `cargo build -p liblovely` → 把两者合并成一个归档。中间某步失败会直接报错退出。
+
 
 同步子模块并完成构建后，可以校验 APK 中是否包含必需的 native 库：
 
@@ -74,8 +123,17 @@ git add .gitmodules love/src/jni/lua-modules/lua-https
 安装 Android SDK `34` 和 Android NDK `25.2.9519653`，配置好 `ANDROID_SDK_ROOT` 后执行：
 
 ```bash
+# 1. 同步子模块（12 个，必须）
+git submodule update --init --recursive
+
+# 2. 生成 LuaJIT 预编译库（只需做一次，详见上一节）
+powershell -ExecutionPolicy Bypass -File .\love\src\jni\LuaJIT-2.1\build_android.ps1
+
+# 3. 构建
 ./gradlew assembleNormalRecord
 ```
+
+**跳过第 2 步会直接失败**，链接阶段会报 `cannot find -lluajit` 或一堆 `lovely_*` 未定义符号。
 
 正常情况下，会在 `app/build/outputs/apk/normalRecord` 下得到 APK。`normalRecord` 就是通常下载到的 APK 变体。
 

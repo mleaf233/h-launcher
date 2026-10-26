@@ -40,9 +40,59 @@ git submodule update --init --force --recursive
 
 ### Submodule Notes
 
-This repository also pins:
+Every third-party dependency is a git submodule. **The main repository stores no third-party
+source code**, only pinned commit IDs:
 
-* `love/src/jni/lua-modules/lua-https`, from https://github.com/love2d/lua-https
+| Path | Upstream | Pinned ref |
+| --- | --- | --- |
+| `love/src/jni/SDL2` | libsdl-org/SDL | `release-2.28.5` |
+| `love/src/jni/freetype2` | freetype/freetype | `VER-2-8-1` |
+| `love/src/jni/openal-soft` | kcat/openal-soft | `1.21.0` |
+| `love/src/jni/oboe` | google/oboe | `1.4.3` |
+| `love/src/jni/libogg-1.3.2` | xiph/ogg | `v1.3.2` |
+| `love/src/jni/libvorbis-1.3.5` | xiph/vorbis | `v1.3.5` |
+| `love/src/jni/libtheora-1.2.0alpha1` | xiph/theora | `v1.2.0alpha1` |
+| `love/src/jni/libmodplug-0.8.8.4` | Konstanty/libmodplug | `edab762` |
+| `love/src/jni/mpg123-1.17.0` | madebr/mpg123 | `e58b7fd` |
+| `love/src/jni/LuaJIT-2.1` | mleaf233/LuaJIT (`android-lovely` branch) | see below |
+| `love/src/jni/love` | mleaf233/love-balatro | `7dd48f26` |
+| `love/src/jni/lua-modules/lua-https` | mleaf233/lua-https | `f4631eb` |
+
+> `LuaJIT-2.1` is this project's own fork. The `android-lovely` branch carries the lovely
+> injection patch (`crates/liblovely/luajit.patch` from lovely-injector). Do not swap it for
+> upstream LuaJIT/LuaJIT, or mod loading will silently stop working.
+
+None of these upstreams ship a usable `Android.mk` (SDL2's own one conflicts with ours), so the
+build scripts live in `love/src/jni/mk/`, each pointing `LOCAL_PATH` back at its submodule.
+Files that upstream does not provide but the build needs (`config.h`, `hrtf_default.h`,
+`SDLActivity.java`, ...) live in `love/src/jni/patches/` and `love/src/sdl-java/`.
+
+### Prebuilt LuaJIT static library (required before building)
+
+`libluajit.a` is ~18 MB and already contains the merged Rust lovely core. **It is not committed**
+(`*.a` is in `.gitignore`), so a fresh clone cannot build until you generate it once:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\love\src\jni\LuaJIT-2.1\build_android.ps1
+```
+
+Output: `love/src/jni/LuaJIT-2.1/android/arm64-v8a/libluajit.a`
+
+Prerequisites (all required):
+
+- **Windows** — the script compiles LuaJIT's host tools (`minilua` / `buildvm`) with MSVC;
+  only Windows has been verified
+- **Visual Studio 2022** (MSVC)
+- **Android NDK `25.2.9519653`** (cross compiler plus GNU make)
+- **Rust nightly** with the android target:
+
+```powershell
+rustup toolchain install nightly
+rustup target add aarch64-linux-android --toolchain nightly
+```
+
+The script builds the host tools, generates `luajit.h` / `buildvm_arch.h`, cross-compiles
+`libluajit.a`, runs `cargo build -p liblovely`, and merges both into a single archive.
 
 After syncing submodules and building, you can verify that the generated APK contains the required native libraries:
 
@@ -74,8 +124,18 @@ Install `JDK 17` before you start. Do not use a version newer or older than 17. 
 Install Android SDK `34` and Android NDK `25.2.9519653`, set `ANDROID_SDK_ROOT`, then run:
 
 ```bash
+# 1. Sync the 12 submodules (required)
+git submodule update --init --recursive
+
+# 2. Generate the prebuilt LuaJIT static library (once, see previous section)
+powershell -ExecutionPolicy Bypass -File .\love\src\jni\LuaJIT-2.1\build_android.ps1
+
+# 3. Build
 ./gradlew assembleNormalRecord
 ```
+
+**Skipping step 2 fails the build** — linking reports `cannot find -lluajit` or a pile of
+undefined `lovely_*` symbols.
 
 Under normal conditions, this generates an APK in `app/build/outputs/apk/normalRecord`.
 `normalRecord` is the standard APK variant.
