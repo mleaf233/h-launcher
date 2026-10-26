@@ -66,8 +66,41 @@ jobs:
       - name: Build libluajit.a
         run: bash ./love/src/jni/LuaJIT-2.1/build_android.sh ${{ matrix.abi }}
 
+      # 签名材料全部走 Secrets，不落仓库：
+      #   KEYSTORE_BASE64   release.jks 的 base64
+      #   KEYSTORE_PASSWORD keystore 密码
+      #   KEY_ALIAS         密钥别名
+      #   KEY_PASSWORD      密钥密码
+      # 没配 KEYSTORE_BASE64 时退化成 debug 签名，并给出警告。
+      - name: Restore keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -z "${KEYSTORE_BASE64:-}" ]; then
+            echo "::warning::未配置 KEYSTORE_BASE64，本次构建使用 debug 签名"
+            exit 0
+          fi
+          mkdir -p keystore
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > keystore/release.jks
+          {
+            echo "storeFile=keystore/release.jks"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyPassword=$KEY_PASSWORD"
+          } > keystore.properties.local
+          echo "keystore 已还原（$(du -h keystore/release.jks | cut -f1)）"
+
       - name: Build release APK
         run: ./gradlew :app:assembleNormalRecordRelease "-PtargetAbi=${{ matrix.abi }}" --console=plain
+
+      - name: Show APK signature
+        run: |
+          APK=out/app/outputs/apk/normalRecord/release/H.apk
+          ls -lh "$APK"
+          keytool -printcert -jarfile "$APK" 2>/dev/null | head -4 || echo "（读不到签名信息）"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

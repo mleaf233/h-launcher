@@ -145,6 +145,27 @@ Alternatively, you can install Android Studio **2022.3.1** or later. On first la
 
 Note: The older embed + APKTool approach is no longer the preferred path because Google distribution requirements have changed.
 
+### Signing in CI
+
+CI restores the signing material from Secrets; no keystore is committed.
+
+1. Convert the keystore to base64:
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes(".\keystore\release.jks")) | Set-Clipboard
+```
+
+2. Add these under Settings → Secrets and variables → Actions:
+
+| Secret | Value |
+| --- | --- |
+| `KEYSTORE_BASE64` | the base64 from step 1 |
+| `KEYSTORE_PASSWORD` | keystore password |
+| `KEY_ALIAS` | key alias |
+| `KEY_PASSWORD` | key password |
+
+Without `KEYSTORE_BASE64` the build falls back to debug signing and emits a warning. The `Show APK signature` step prints the actual certificate so you can verify it.
+
 Issues
 ------
 

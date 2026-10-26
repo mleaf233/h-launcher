@@ -140,6 +140,27 @@ keytool -genkeypair -v `
 
 注意：过去常用的 embed + APKTool 方式，现在已经不再适合作为主要方案，因为 Google 的发布要求已经变化。
 
+### 远程构建签名
+
+CI 通过 Secrets 还原签名材料，仓库里不放 keystore。
+
+1. 把 keystore 转成 base64：
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes(".\keystore\release.jks")) | Set-Clipboard
+```
+
+2. 仓库 Settings → Secrets and variables → Actions，添加：
+
+| Secret | 值 |
+| --- | --- |
+| `KEYSTORE_BASE64` | 上一步的 base64 |
+| `KEYSTORE_PASSWORD` | keystore 密码 |
+| `KEY_ALIAS` | 密钥别名 |
+| `KEY_PASSWORD` | 密钥密码 |
+
+没配 `KEYSTORE_BASE64` 时 CI 会退化成 debug 签名并给警告；日志里的 `Show APK signature` 步骤会打印实际签名证书，可用于核对。
+
 问题反馈
 --------
 
