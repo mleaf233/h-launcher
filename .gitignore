@@ -1,0 +1,43 @@
+assets/
+bin/
+gen/
+libs/
+obj/
+out/
+
+local.properties
+keystore.properties.local
+keystore/
+!keystore/.gitkeep
+
+.*.swp
+.*~
+*~
+*.o
+*.so
+*.a
+*.orig
+*.rej
+
+
+# Downloaded gradle wrapper
+.gradle
+.gradle-home
+.gradle-project-cache
+
+# Android Studio project files
+.idea
+*.iml
+.android-home
+
+# Gradle build files
+build
+.externalNativeBuild
+.cxx
+
+# love-android specific
+!app/src/main/assets/
+app/src/main/assets/game.love
+
+# Local assistant workspace data
+.workbuddy-ai/

@@ -1,0 +1,36 @@
+[submodule "love/src/jni/SDL2"]
+	path = love/src/jni/SDL2
+	url = https://github.com/libsdl-org/SDL.git
+[submodule "love/src/jni/freetype2"]
+	path = love/src/jni/freetype2
+	url = https://github.com/freetype/freetype.git
+[submodule "love/src/jni/openal-soft"]
+	path = love/src/jni/openal-soft
+	url = https://github.com/kcat/openal-soft.git
+[submodule "love/src/jni/oboe"]
+	path = love/src/jni/oboe
+	url = https://github.com/google/oboe.git
+[submodule "love/src/jni/libogg-1.3.2"]
+	path = love/src/jni/libogg-1.3.2
+	url = https://github.com/xiph/ogg.git
+[submodule "love/src/jni/libvorbis-1.3.5"]
+	path = love/src/jni/libvorbis-1.3.5
+	url = https://github.com/xiph/vorbis.git
+[submodule "love/src/jni/libtheora-1.2.0alpha1"]
+	path = love/src/jni/libtheora-1.2.0alpha1
+	url = https://github.com/xiph/theora.git
+[submodule "love/src/jni/libmodplug-0.8.8.4"]
+	path = love/src/jni/libmodplug-0.8.8.4
+	url = https://github.com/Konstanty/libmodplug.git
+[submodule "love/src/jni/mpg123-1.17.0"]
+	path = love/src/jni/mpg123-1.17.0
+	url = https://github.com/madebr/mpg123.git
+[submodule "love/src/jni/LuaJIT-2.1"]
+	path = love/src/jni/LuaJIT-2.1
+	url = https://github.com/mleaf233/LuaJIT.git
+[submodule "love/src/jni/love"]
+	path = love/src/jni/love
+	url = https://github.com/mleaf233/love-balatro.git
+[submodule "love/src/jni/lua-modules/lua-https"]
+	path = love/src/jni/lua-modules/lua-https
+	url = https://github.com/mleaf233/lua-https.git

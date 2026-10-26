@@ -1,0 +1,181 @@
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+    id 'kotlin-kapt'
+    id 'kotlin-parcelize'
+}
+
+android {
+    // If you want to use the debugger for JNI code, you want to debug this lib-project in Debug!
+    // And due to gradle limitations/bugs, the best way is to always debug it in debug.
+    // See https://code.google.com/p/android/issues/detail?id=52962
+    // and http://stackoverflow.com/questions/27277433/why-does-gradle-build-my-module-in-release-mode-when-the-app-is-in-debug
+    // defaultPublishConfig "debug"
+    namespace "org.love2d.android"
+    ndkVersion '25.2.9519653'
+
+    defaultConfig {
+        minSdk 21
+        compileSdk 34
+        targetSdk 34
+        externalNativeBuild {
+            ndkBuild {
+                arguments "-j" + Runtime.runtime.availableProcessors()
+            }
+        }
+        ndk {
+            // Specifies the ABI configurations of your native
+            // libraries Gradle should build and package with your APK.
+            // noinspection ChromeOsAbiSupport
+            abiFilters 'arm64-v8a'
+            debugSymbolLevel 'SYMBOL_TABLE'
+        }
+    }
+
+    def retrieveAll3pModules = { ->
+        def modules = []
+
+        fileTree("src/jni/lua-modules").visit { FileVisitDetails details ->
+            if (details.isDirectory()) {
+                if (file(details.file.path + "/Android.mk").exists()) {
+                    def logger = project.getLogger()
+                    logger.lifecycle("3rd-party module: " + details.file.path)
+
+                    def javainfo = file(details.file.path + "/java.txt")
+                    if (javainfo.exists()) {
+                        def fstream = new FileInputStream(javainfo)
+                        def infile = new BufferedReader(new InputStreamReader(fstream))
+                        def javapath = infile.readLine().replace("\\", "/")
+                        def mpath = ""
+
+                        if (javapath[0] != '/') {
+                            mpath = details.file.path + "/" + javapath
+                        } else {
+                            mpath = details.file.path + javapath
+                        }
+
+                        modules << mpath
+
+                        logger.lifecycle("Registered path " + mpath)
+                        infile.close()
+                    }
+                }
+            }
+        }
+
+        return modules
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    flavorDimensions = ['mode']
+    productFlavors {
+        normal {
+            dimension 'mode'
+        }
+        embed {
+            dimension 'mode'
+        }
+    }
+
+    sourceSets {
+        main {
+            java {
+                // SDL2 的 Java 层已收进 src/sdl-java（SDLActivity 被 love-android 改过，
+                // 加了 startNative/resetNative 用于换游戏时重启 native 层）。
+                // 不能同时用 SDL2 submodule 里的那份，否则 SDLActivity 会重复定义。
+                srcDir 'src/sdl-java'
+                srcDir 'src/main/java'
+                srcDirs += retrieveAll3pModules()
+            }
+        }
+        normal {
+            java {
+                srcDirs += 'src/normal/java'
+            }
+        }
+    }
+
+    externalNativeBuild {
+        ndkBuild {
+            path 'src/jni/Android.mk'
+        }
+    }
+
+    packagingOptions {
+        jniLibs {
+            excludes += [
+                'lib/arm64-v8a/libSDL2.so',
+                'lib/x86_64/libSDL2.so',
+            ]
+        }
+    }
+
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+
+    lint {
+        abortOnError false
+    }
+}
+
+dependencies {
+    api fileTree(dir: 'libs', include: ['*.jar'])
+    api 'androidx.appcompat:appcompat:1.6.1'
+
+    api 'com.google.android.material:material:1.9.0'
+    api 'androidx.constraintlayout:constraintlayout:2.0.4'
+    api 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+    api 'com.google.oboe:oboe:1.9.3'
+    api "androidx.core:core-ktx:1.12.0"
+    api "androidx.window:window:1.2.0"
+    api 'com.github.CymChad:BaseRecyclerViewAdapterHelper:3.0.10'
+    // Jetpack Compose 核心
+    api "androidx.activity:activity-ktx:1.8.2"
+    api "androidx.activity:activity-compose:1.9.0"
+    api "androidx.compose.ui:ui:1.6.7"
+    api "androidx.compose.foundation:foundation:1.6.7"
+    api "androidx.compose.material3:material3:1.2.1"
+    api "androidx.compose.ui:ui-tooling-preview:1.6.7"
+    // 可选：状态管理、导航
+    api "androidx.navigation:navigation-compose:2.7.7"
+    api "com.google.accompanist:accompanist-navigation-animation:0.36.0"
+    api "androidx.lifecycle:lifecycle-runtime-compose:2.7.0"
+    // 调试工具
+    debugImplementation "androidx.compose.ui:ui-tooling:1.6.7"
+    api "androidx.compose.material:material-icons-extended:1.6.7"
+    //mmkv
+    api 'com.tencent:mmkv:1.3.1'
+    api "com.airbnb.android:lottie-compose:5.2.0"
+    api "androidx.compose.animation:animation:1.7.3"
+    api "com.google.accompanist:accompanist-permissions:0.34.0"
+    api "com.google.accompanist:accompanist-pager:0.34.0"
+    api "com.google.accompanist:accompanist-pager-indicators:0.34.0"
+    api "com.google.accompanist:accompanist-systemuicontroller:0.34.0"
+    api 'io.github.petterpx:floatingx:2.3.5'
+    // system浮窗&&compose时需要导入
+    // 记得AppHelper里调用 enableComposeSupport()
+    api 'io.github.petterpx:floatingx-compose:2.3.5'
+    api "androidx.annotation:annotation:1.7.1"
+
+    api 'com.github.michaellee123:LiveEventBus:1.8.14'
+
+    api "io.coil-kt:coil-compose:2.4.0" // 或最新版
+    api "com.journeyapps:zxing-android-embedded:4.3.0"
+    // CameraX
+    api "androidx.camera:camera-camera2:1.3.0"
+    api "androidx.camera:camera-lifecycle:1.3.0"
+    api "androidx.camera:camera-view:1.3.0"
+
+    // ML Kit Barcode Scanning
+    api "com.google.mlkit:barcode-scanning:17.2.0"
+
+    api "com.tencent.bugly:crashreport:latest.release"
+    api 'net.lingala.zip4j:zip4j:2.11.5'
+}
