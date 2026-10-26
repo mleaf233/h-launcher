@@ -62,24 +62,25 @@ git submodule update --init --force --recursive
 
 ## 构建
 
-需要 JDK 17、Android SDK 34、NDK `25.2.9519653`、VS2022、Rust nightly。
+需要 JDK 17、Android SDK 34、NDK `25.2.9519653`、Rust nightly。
 
-```powershell
+```bash
 # 1. 子模块
 git submodule update --init --recursive
 
 # 2. 生成 LuaJIT 静态库（只需一次）
-powershell -ExecutionPolicy Bypass -File .\love\src\jni\LuaJIT-2.1\build_android.ps1
+bash ./love/src/jni/LuaJIT-2.1/build_android.sh          # Linux / macOS
+powershell -ExecutionPolicy Bypass -File .\love\src\jni\LuaJIT-2.1\build_android.ps1   # Windows，另需 VS2022
 
 # 3. 出包
-.\gradlew.bat assembleNormalRecordRelease
+./gradlew assembleNormalRecordRelease
 ```
 
 产物：`out/app/outputs/apk/normalRecord/release/H.apk`
 
 - 第 2 步不能跳过，否则链接报 `cannot find -lluajit` 或 `lovely_*` 未定义。
-- 换架构：脚本加 `-Abi x86_64`，gradle 加 `-PtargetAbi=x86_64`。
-- 没配 `ANDROID_SDK_ROOT` 时，根目录建 `local.properties` 写 `sdk.dir=D:\Android\Sdk`。
+- 换架构：脚本加 `x86_64`（Windows 用 `-Abi x86_64`），gradle 加 `-PtargetAbi=x86_64`。
+- 没配 `ANDROID_SDK_ROOT` 时，根目录建 `local.properties` 写 `sdk.dir=...`。
 - 输出目录固定在 `out/`，避免 Windows 路径过长导致资源编译失败。
 - 子模块没初始化时报 `Missing LOVE`。
 

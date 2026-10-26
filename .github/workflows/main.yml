@@ -18,7 +18,7 @@ permissions:
 jobs:
   build:
     name: build ${{ matrix.abi }}
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -44,12 +44,10 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install NDK 25.2.9519653
-        shell: pwsh
         run: |
-          "y`ny`ny`ny`ny`ny`ny`n" | sdkmanager --licenses | Out-Null
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
           sdkmanager "ndk;25.2.9519653"
-          "ANDROID_NDK_HOME=$env:ANDROID_SDK_ROOT\ndk\25.2.9519653" |
-            Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/25.2.9519653" >> "$GITHUB_ENV"
 
       - name: Setup Rust nightly
         uses: dtolnay/rust-toolchain@nightly
@@ -57,12 +55,10 @@ jobs:
           targets: ${{ matrix.rust_target }}
 
       - name: Build libluajit.a
-        shell: pwsh
-        run: ./love/src/jni/LuaJIT-2.1/build_android.ps1 -Abi ${{ matrix.abi }}
+        run: bash ./love/src/jni/LuaJIT-2.1/build_android.sh ${{ matrix.abi }}
 
       - name: Build release APK
-        shell: pwsh
-        run: ./gradlew.bat :app:assembleNormalRecordRelease "-PtargetAbi=${{ matrix.abi }}" --console=plain
+        run: ./gradlew :app:assembleNormalRecordRelease "-PtargetAbi=${{ matrix.abi }}" --console=plain
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

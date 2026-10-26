@@ -67,24 +67,25 @@ Files upstream does not provide but the build needs live in `love/src/jni/patche
 
 ## Build
 
-Requires JDK 17, Android SDK 34, NDK `25.2.9519653`, VS2022, Rust nightly.
+Requires JDK 17, Android SDK 34, NDK `25.2.9519653`, Rust nightly.
 
-```powershell
+```bash
 # 1. Submodules
 git submodule update --init --recursive
 
 # 2. Build the LuaJIT static library (once)
-powershell -ExecutionPolicy Bypass -File .\love\src\jni\LuaJIT-2.1\build_android.ps1
+bash ./love/src/jni/LuaJIT-2.1/build_android.sh          # Linux / macOS
+powershell -ExecutionPolicy Bypass -File .\love\src\jni\LuaJIT-2.1\build_android.ps1   # Windows, needs VS2022
 
 # 3. Build the APK
-.\gradlew.bat assembleNormalRecordRelease
+./gradlew assembleNormalRecordRelease
 ```
 
 Output: `out/app/outputs/apk/normalRecord/release/H.apk`
 
 - Step 2 is mandatory, otherwise linking fails with `cannot find -lluajit` or undefined `lovely_*`.
-- Other ABIs: pass `-Abi x86_64` to the script and `-PtargetAbi=x86_64` to Gradle.
-- Without `ANDROID_SDK_ROOT`, create `local.properties` with `sdk.dir=D:\Android\Sdk`.
+- Other ABIs: pass `x86_64` to the script (`-Abi x86_64` on Windows) and `-PtargetAbi=x86_64` to Gradle.
+- Without `ANDROID_SDK_ROOT`, create `local.properties` with `sdk.dir=...`.
 - Build output is pinned to `out/` to avoid Windows path-length failures.
 - A missing submodule checkout fails with `Missing LOVE`.
 
