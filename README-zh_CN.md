@@ -78,19 +78,10 @@ powershell -ExecutionPolicy Bypass -File .\love\src\jni\LuaJIT-2.1\build_android
 产物：`out/app/outputs/apk/normalRecord/release/H.apk`
 
 - 第 2 步不能跳过，否则链接报 `cannot find -lluajit` 或 `lovely_*` 未定义。
-- 换架构：脚本加 `-Abi armeabi-v7a`，gradle 加 `-PtargetAbi=armeabi-v7a`。
+- 换架构：脚本加 `-Abi x86_64`，gradle 加 `-PtargetAbi=x86_64`。
 - 没配 `ANDROID_SDK_ROOT` 时，根目录建 `local.properties` 写 `sdk.dir=D:\Android\Sdk`。
 - 输出目录固定在 `out/`，避免 Windows 路径过长导致资源编译失败。
 - 子模块没初始化时报 `Missing LOVE`。
-
-## 持续集成
-
-`.github/workflows/main.yml`：
-
-- 手动触发或推 `v*` tag 时，按架构并行构建 release APK。
-- 每个架构上传工件 `H-<abi>`，保留 1 天。
-- 推 tag 或手动勾选 release 时，创建 Release 并附上 `H-<abi>.apk`。
-
 
 正式签名
 --------

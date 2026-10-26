@@ -83,19 +83,10 @@ powershell -ExecutionPolicy Bypass -File .\love\src\jni\LuaJIT-2.1\build_android
 Output: `out/app/outputs/apk/normalRecord/release/H.apk`
 
 - Step 2 is mandatory, otherwise linking fails with `cannot find -lluajit` or undefined `lovely_*`.
-- Other ABIs: pass `-Abi armeabi-v7a` to the script and `-PtargetAbi=armeabi-v7a` to Gradle.
+- Other ABIs: pass `-Abi x86_64` to the script and `-PtargetAbi=x86_64` to Gradle.
 - Without `ANDROID_SDK_ROOT`, create `local.properties` with `sdk.dir=D:\Android\Sdk`.
 - Build output is pinned to `out/` to avoid Windows path-length failures.
 - A missing submodule checkout fails with `Missing LOVE`.
-
-## Continuous Integration
-
-`.github/workflows/main.yml`:
-
-- Runs on manual dispatch or a `v*` tag, building the release APK per ABI in parallel.
-- Uploads an `H-<abi>` artifact per ABI, kept for 1 day.
-- On a tag (or when `release` is checked), creates a Release with `H-<abi>.apk` attached.
-
 
 Release Signing
 ---------------
