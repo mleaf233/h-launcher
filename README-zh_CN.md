@@ -161,6 +161,20 @@ CI 通过 Secrets 还原签名材料，仓库里不放 keystore。
 
 没配 `KEYSTORE_BASE64` 时 CI 会退化成 debug 签名并给警告；日志里的 `Show APK signature` 步骤会打印实际签名证书，可用于核对。
 
+## 音频配置
+
+首次启动会在外部存储写一份默认配置，改完重启游戏生效：
+
+```
+Android/data/<包名>/files/alsoft.ini
+```
+
+| 键 | 默认 | 说明 |
+| --- | --- | --- |
+| `[oboe] low-latency` | `true` | `true` 走 AAudio 快速通道，延迟最低；插拔耳机时会短暂断音后自动恢复。`false` 走 AudioTrack 通道，延迟略高，但路由切换不断音。 |
+
+插拔耳机后完全没声音的问题已修复（自动重开音频流）。若觉得切换时有轻微卡顿，把该键改成 `false`。
+
 问题反馈
 --------
 

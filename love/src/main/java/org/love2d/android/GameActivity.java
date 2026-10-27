@@ -84,7 +84,24 @@ public class GameActivity extends SDLActivity {
     public int safeAreaRight = 0;
     private String[] args;
 
+    // Written to external storage on first launch so it can be edited without rebuilding.
+    private static final String DEFAULT_ALSOFT_INI =
+            "# OpenAL Soft configuration. Edit this file and restart the game to apply.\n"
+          + "#\n"
+          + "# [oboe] low-latency\n"
+          + "#   true  - AAudio fast path (MMAP). Lowest latency, but plugging in headphones\n"
+          + "#           tears the stream down; it is reopened automatically and may produce a\n"
+          + "#           short gap in audio.\n"
+          + "#   false - AudioTrack compatibility path. A little more latency, but the system\n"
+          + "#           reroutes the stream and audio never drops out when the output device\n"
+          + "#           changes.\n"
+          + "\n"
+          + "[oboe]\n"
+          + "low-latency = true\n";
+
     private static native void nativeSetDefaultStreamValues(int sampleRate, int framesPerBurst);
+
+    private static native void nativeSetAlsoftConf(String path);
 
     // 1. 在类中声明你的 JNI 函数
     public static native void nativeInitializeLovely(String modDir);
@@ -127,6 +144,40 @@ public class GameActivity extends SDLActivity {
     // 用于监听关闭命令的接收器
     private BroadcastReceiver shutdownCommandReceiver;
 
+    /**
+     * Writes a default alsoft.ini to the app's external files directory (only if it does not
+     * exist yet) and points OpenAL Soft at it via ALSOFT_CONF.
+     *
+     * The file lives at Android/data/<package>/files/alsoft.ini, which is reachable over adb
+     * and from file managers, so it can be edited on device without rebuilding the app.
+     */
+    private void setupAlsoftConfig() {
+        try {
+            File dir = getExternalFilesDir(null);
+            if (dir == null) {
+                Log.w("GameActivity", "No external files dir; OpenAL uses built-in defaults");
+                return;
+            }
+            if (!dir.exists() && !dir.mkdirs()) {
+                Log.w("GameActivity", "Cannot create " + dir.getAbsolutePath());
+                return;
+            }
+
+            File conf = new File(dir, "alsoft.ini");
+            if (!conf.exists()) {
+                try (FileOutputStream out = new FileOutputStream(conf)) {
+                    out.write(DEFAULT_ALSOFT_INI.getBytes(
+                            java.nio.charset.StandardCharsets.UTF_8));
+                }
+            }
+
+            nativeSetAlsoftConf(conf.getAbsolutePath());
+            Log.d("GameActivity", "OpenAL config: " + conf.getAbsolutePath());
+        } catch (Throwable t) {
+            Log.w("GameActivity", "Failed to set up alsoft.ini", t);
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d("GameActivity", "started");
@@ -153,6 +204,9 @@ public class GameActivity extends SDLActivity {
 
         super.onCreate(savedInstanceState);
         metrics = getResources().getDisplayMetrics();
+
+        // Point OpenAL at an editable alsoft.ini before the audio device is opened
+        setupAlsoftConfig();
 
         // Set low-latency audio values
         nativeSetDefaultStreamValues(getAudioFreq(), getAudioSMP());

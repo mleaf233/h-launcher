@@ -166,6 +166,20 @@ CI restores the signing material from Secrets; no keystore is committed.
 
 Without `KEYSTORE_BASE64` the build falls back to debug signing and emits a warning. The `Show APK signature` step prints the actual certificate so you can verify it.
 
+## Audio Configuration
+
+A default config is written to external storage on first launch. Edit it and restart the game:
+
+```
+Android/data/<package>/files/alsoft.ini
+```
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `[oboe] low-latency` | `true` | `true` uses AAudio's fast path (lowest latency); plugging in headphones causes a brief gap before the stream is reopened automatically. `false` uses the AudioTrack path: a little more latency, but audio never drops out on route changes. |
+
+The "no sound after plugging in headphones" bug is fixed by reopening the audio stream. If the switch still feels rough, set the key to `false`.
+
 Issues
 ------
 

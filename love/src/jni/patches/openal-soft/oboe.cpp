@@ -6,6 +6,7 @@
 #include <cassert>
 #include <cstring>
 
+#include "alconfig.h"
 #include "alu.h"
 #include "logging.h"
 
@@ -15,6 +16,26 @@
 namespace {
 
 constexpr char device_name[] = "Oboe Default";
+
+
+/* Which AAudio path to use, from alsoft.ini:
+ *
+ *   [oboe]
+ *   low-latency = true    (default)
+ *
+ * LowLatency uses AAudio's MMAP path. It has the lowest latency, but MMAP binds the stream
+ * to one specific device endpoint, so a route change (headphones in/out) makes the stream
+ * disconnected and closed. onErrorAfterClose() reopens it, which costs a short gap in audio.
+ *
+ * Setting low-latency = false uses the AudioTrack compatibility path: routing changes are
+ * handled by the system and the stream never dies, at the cost of a little extra latency.
+ */
+oboe::PerformanceMode getPerformanceMode()
+{
+    if(GetConfigValueBool(nullptr, "oboe", "low-latency", 1))
+        return oboe::PerformanceMode::LowLatency;
+    return oboe::PerformanceMode::None;
+}
 
 
 struct OboePlayback final : public BackendBase, public oboe::AudioStreamCallback {
@@ -102,13 +123,9 @@ void OboePlayback::open(const ALCchar *name)
         throw al::backend_exception{ALC_INVALID_VALUE, "Device name \"%s\" not found", name};
 
     /* Open a basic output stream, just to ensure it can work.
-     * None instead of LowLatency: LowLatency uses AAudio's MMAP path, which binds the stream
-     * to one specific device endpoint, so plugging in headphones makes the whole stream
-     * disconnected and closed. None uses the AudioTrack compatibility path, where routing
-     * changes are handled by the system and the stream survives.
-     * Balatro is not latency sensitive, so trading a little latency for stability is fine. */
+     * Performance mode comes from alsoft.ini, see getPerformanceMode(). */
     oboe::Result result{oboe::AudioStreamBuilder{}.setDirection(oboe::Direction::Output)
-        ->setPerformanceMode(oboe::PerformanceMode::None)
+        ->setPerformanceMode(getPerformanceMode())
         ->openManagedStream(mStream)};
     if(result != oboe::Result::OK)
         throw al::backend_exception{ALC_INVALID_VALUE, "Failed to create stream: %s",
@@ -121,8 +138,8 @@ bool OboePlayback::reset()
 {
     oboe::AudioStreamBuilder builder;
     builder.setDirection(oboe::Direction::Output);
-    /* Same as open(): avoid MMAP and let the system handle route changes */
-    builder.setPerformanceMode(oboe::PerformanceMode::None);
+    /* Same as open(): the performance mode comes from alsoft.ini */
+    builder.setPerformanceMode(getPerformanceMode());
     /* Don't let Oboe convert. We should be able to handle anything it gives
      * back.
      */

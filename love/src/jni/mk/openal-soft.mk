@@ -191,6 +191,6 @@ include $(BUILD_SHARED_LIBRARY)
 include $(CLEAR_VARS)
 LOCAL_PATH := $(OPENAL_MK_DIR)/../patches/openal-soft
 LOCAL_MODULE := love_android_jni
-LOCAL_SRC_FILES := opensl_latency.cpp
+LOCAL_SRC_FILES := opensl_latency.cpp android_alsoft_conf.cpp
 LOCAL_C_INCLUDES := $(OPENAL_MK_DIR)/../oboe/include
 include $(BUILD_STATIC_LIBRARY)
