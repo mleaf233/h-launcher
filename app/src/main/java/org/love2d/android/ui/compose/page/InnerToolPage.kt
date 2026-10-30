@@ -8,54 +8,86 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoFixHigh
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import org.love2d.android.ui.activity.Screen
+import org.love2d.android.ui.compose.TopTitleBar
 
 @Composable
 fun InnerToolPage(
     navController: NavController,
 ) {
-    LazyColumn(
+    Surface(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            top = 10.dp,
-            start = 10.dp,
-            end = 10.dp,
-            bottom = 125.dp
-        ),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        color = MaterialTheme.colorScheme.background,
     ) {
-        item {
-            BuiltInToolCard(
-                title = "着色器修复",
-                description = "先选择模组，再查看并修复该模组下的着色器文件。",
-                onClick = {
-                    navController.navigate(Screen.SHADER_FIXER_MOD_LIST.name)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+        ) {
+            TopTitleBar(navController = navController, title = "内置工具")
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    top = 10.dp,
+                    start = 10.dp,
+                    end = 10.dp,
+                    bottom = 125.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                item {
+                    BuiltInToolCard(
+                        icon = Icons.Default.AutoFixHigh,
+                        title = "着色器修复",
+                        description = "先选择模组，再查看并修复该模组下的着色器文件。",
+                        onClick = {
+                            navController.navigate(Screen.SHADER_FIXER_MOD_LIST.name)
+                        }
+                    )
                 }
-            )
+                item {
+                    BuiltInToolCard(
+                        icon = Icons.Default.LockOpen,
+                        title = "去除版本限制",
+                        description = "去掉某个模组对前置模组的版本要求，只保留「必须存在」的检查。" +
+                                "适用于前置模组版本号不够、但实际能正常使用的情况。",
+                        onClick = {
+                            navController.navigate(Screen.VERSION_LIMIT_MOD_LIST.name)
+                        }
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
 private fun BuiltInToolCard(
+    icon: ImageVector,
     title: String,
     description: String,
     onClick: () -> Unit,
@@ -81,7 +113,7 @@ private fun BuiltInToolCard(
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.Default.AutoFixHigh,
+                imageVector = icon,
                 contentDescription = title,
                 tint = MaterialTheme.colorScheme.primary
             )

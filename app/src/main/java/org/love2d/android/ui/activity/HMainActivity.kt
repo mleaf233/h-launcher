@@ -35,6 +35,7 @@ import org.love2d.android.ui.compose.page.EnhancedLovelyLogPage
 import org.love2d.android.ui.compose.page.FinalFixedHeaderPage
 import org.love2d.android.ui.compose.page.GameDetailPage
 import org.love2d.android.ui.compose.page.HomePage
+import org.love2d.android.ui.compose.page.InnerToolPage
 import org.love2d.android.ui.compose.page.ModPage
 import org.love2d.android.ui.compose.page.ModDirectInstallPage
 import org.love2d.android.ui.compose.page.ModPackagerPage
@@ -44,6 +45,8 @@ import org.love2d.android.ui.compose.page.SaveManagerPage
 import org.love2d.android.ui.compose.page.ShaderFixerModListPage
 import org.love2d.android.ui.compose.page.ShadersFilePage
 import org.love2d.android.ui.compose.page.SplashPage
+import org.love2d.android.ui.compose.page.VersionLimitDetailPage
+import org.love2d.android.ui.compose.page.VersionLimitModListPage
 import org.love2d.android.ui.resource.AppRoot
 import org.love2d.android.ui.resource.LocalUserPreferredTheme
 import org.love2d.android.util.FilePickerHelper
@@ -367,6 +370,49 @@ fun HAppNavHost(
                     )
                 } else {
                     // 如果路径为空，可以自动返回上一页
+                    navController.popBackStack()
+                }
+            }
+
+            composable(Screen.INNER_TOOL.name, enterTransition = {
+                fadeIn(animationSpec = tween(durationMillis = 300))
+            }, exitTransition = {
+                fadeOut(animationSpec = tween(durationMillis = 300))
+            }, popEnterTransition = {
+                fadeIn(animationSpec = tween(durationMillis = 300))
+            }, popExitTransition = {
+                fadeOut(animationSpec = tween(durationMillis = 300))
+            }) {
+                InnerToolPage(navController = navController)
+            }
+
+            composable(Screen.VERSION_LIMIT_MOD_LIST.name, enterTransition = {
+                fadeIn(animationSpec = tween(durationMillis = 300))
+            }, exitTransition = {
+                fadeOut(animationSpec = tween(durationMillis = 300))
+            }, popEnterTransition = {
+                fadeIn(animationSpec = tween(durationMillis = 300))
+            }, popExitTransition = {
+                fadeOut(animationSpec = tween(durationMillis = 300))
+            }) {
+                VersionLimitModListPage(navController = navController, viewModel = viewModel)
+            }
+
+            composable(
+                route = Screen.VERSION_LIMIT_DETAIL.name + "/{modDir}",
+                arguments = listOf(navArgument("modDir") { type = NavType.StringType }),
+                enterTransition = { fadeIn(animationSpec = tween(durationMillis = 300)) },
+                exitTransition = { fadeOut(animationSpec = tween(durationMillis = 300)) },
+                popEnterTransition = { fadeIn(animationSpec = tween(durationMillis = 300)) },
+                popExitTransition = { fadeOut(animationSpec = tween(durationMillis = 300)) }
+            ) { backStackEntry ->
+                val encodedDir = backStackEntry.arguments?.getString("modDir")
+                if (encodedDir != null) {
+                    VersionLimitDetailPage(
+                        navController = navController,
+                        modDirPath = URLDecoder.decode(encodedDir, "UTF-8")
+                    )
+                } else {
                     navController.popBackStack()
                 }
             }

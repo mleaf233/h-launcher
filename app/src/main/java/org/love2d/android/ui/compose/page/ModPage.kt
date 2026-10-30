@@ -46,7 +46,7 @@ fun ModPage(
 
     var selectedTab by remember { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
-    val title = listOf("已安装", "内置工具")
+    val title = listOf("已安装", "已下载")
 
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { title.size })
 
@@ -100,8 +100,11 @@ fun ModPage(
                             }
 
                             else -> {
-                                InnerToolPage(
-                                    navController
+                                // 与「模组商店 -> 在线商店 -> 下载列表」同一个页面，嵌入模式下去掉自带的标题栏
+                                DownloadInfoModPage(
+                                    navController = navController,
+                                    viewModel = viewModel,
+                                    embedded = true
                                 )
                             }
                         }

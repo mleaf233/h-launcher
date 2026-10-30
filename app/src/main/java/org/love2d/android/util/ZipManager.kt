@@ -48,7 +48,7 @@ private fun BufferedOutputStream?.closeQuietly() {
  */
 object ZipManager {
 
-    // 限制最大文件大小为100MB，防止ZIP炸弹攻击
+    // 仅用于 Base64 存档导入的兜底上限，模组安装不再做大小限制
     private const val MAX_FILE_SIZE = 100 * 1024 * 1024L // 100MB
 
     /**
@@ -88,8 +88,10 @@ object ZipManager {
             return
         }
 
-        // 创建一个临时文件来存放 Uri 的内容
-        val tempZipFile = File(context.cacheDir, "${System.currentTimeMillis()}_$fileNameWithExt")
+        // 创建一个临时文件来存放 Uri 的内容。
+        // 模组可能有几百 MB，优先用外部缓存目录（容量通常远大于内部 cache）。
+        val tempDir = context.externalCacheDir ?: context.cacheDir
+        val tempZipFile = File(tempDir, "${System.currentTimeMillis()}_$fileNameWithExt")
 
         CoroutineScope(Dispatchers.IO).launch {
             var inputStream: BufferedInputStream? = null
@@ -104,16 +106,9 @@ object ZipManager {
                     return@launch
                 }
 
-                // 检查文件大小
-                val size = inputStream.available().toLong()
-                if (size > MAX_FILE_SIZE) {
-                    Log.e("ZipManager", "文件过大: $size bytes, 超过限制: $MAX_FILE_SIZE bytes")
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "文件过大，超过100MB限制", Toast.LENGTH_LONG).show()
-                    }
-                    return@launch
-                }
-
+                // 不再限制安装包大小：部分模组本身就有几百 MB。
+                // 注意不能用 inputStream.available() 判断大小——对 content:// 的 Uri
+                // 它只返回"当前可无阻塞读取的字节数"，和真实文件大小无关。
                 outputStream = BufferedOutputStream(FileOutputStream(tempZipFile))
                 inputStream.copyTo(outputStream)
                 outputStream.flush()

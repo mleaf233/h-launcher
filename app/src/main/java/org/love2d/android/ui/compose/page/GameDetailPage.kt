@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -256,6 +257,27 @@ fun GameDetailPage(
                         content = "点击查看",
                         onClick = {
                             navController.navigate(Screen.MOD_PORTAL.name)
+                        }
+                    )
+                }
+                item {
+                    InfoRow(
+                        icon = Icons.Default.Build,
+                        title = "内置工具",
+                        content = "着色器修复、去除版本限制",
+                        onClick = {
+                            // 内置工具要扫描模组目录，这里和「模组」入口一样先确保目录已创建
+                            gameInfo?.let {
+                                if (it.modPath.isNullOrEmpty()) {
+                                    val modsFolder = GameManager.createGameModsFolder(
+                                        context = context,
+                                        name = gameInfo?.name.orEmpty()
+                                    )
+                                    it.modPath = modsFolder
+                                }
+                                viewModel.update(it)
+                            }
+                            navController.navigate(Screen.INNER_TOOL.name)
                         }
                     )
                 }

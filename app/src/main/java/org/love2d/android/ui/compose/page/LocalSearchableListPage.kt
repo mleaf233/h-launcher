@@ -64,6 +64,7 @@ import java.io.File
 fun DownloadInfoModPage(
     navController: NavController,
     viewModel: GameManagerViewModel,
+    embedded: Boolean = false,
 ) {
     val context = LocalContext.current
 
@@ -96,6 +97,7 @@ fun DownloadInfoModPage(
                     navController,
                     viewModel,
                     currentSort = currentSort,
+                    embedded = embedded,
                     onSortClick = { sortKey ->
                         currentSort = sortKey
                         if (currentQuery.isNotBlank()) {
@@ -124,6 +126,7 @@ fun DownloadInfoAdaptivePinnedHeader(
     onSortClick: (String) -> Unit,
     currentSort : String = "stars",
     onSearchChanged: (String) -> Unit,
+    embedded: Boolean = false,
 ) {
     // 1. 使用 Surface 作为根容器，它没有高度限制。
     //    设置 tonalElevation 可以让它看起来像一个悬浮的工具栏。
@@ -139,32 +142,39 @@ fun DownloadInfoAdaptivePinnedHeader(
         Column(
             modifier = Modifier
                 // 增加一些内边距，让布局更好看
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .padding(horizontal = 16.dp, vertical = if (embedded) 8.dp else 12.dp)
                 .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.statusBars)
+                // 嵌入到「模组」页签时，外层已经有安全区处理，不再重复加状态栏内边距
+                .then(
+                    if (embedded) Modifier
+                    else Modifier.windowInsetsPadding(WindowInsets.statusBars)
+                )
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-            ) {
-                // 左上角的返回按钮
-                Icon(
-                    Icons.Default.ArrowBack,
-                    contentDescription = Icons.Default.ArrowBack.name,
+            // 嵌入模式下由外层页面提供标题栏，这里只保留搜索/排序行
+            if (!embedded) {
+                Box(
                     modifier = Modifier
-                        .align(Alignment.CenterStart)
-                        .clickable { navController.popBackStack() }
-                )
+                        .fillMaxWidth()
+                ) {
+                    // 左上角的返回按钮
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = Icons.Default.ArrowBack.name,
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .clickable { navController.popBackStack() }
+                    )
 
-                // 居中的标题
-                Text(
-                    text = "下载列表",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.align(Alignment.Center)
-                )
+                    // 居中的标题
+                    Text(
+                        text = "下载列表",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
             }
-            Spacer(modifier = Modifier.height(12.dp))
             // 第二行：控件行
             Row(
                 modifier = Modifier.fillMaxWidth(),
