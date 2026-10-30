@@ -63,7 +63,7 @@ fun InnerToolPage(
                     BuiltInToolCard(
                         icon = Icons.Default.AutoFixHigh,
                         title = "着色器修复",
-                        description = "先选择模组，再查看并修复该模组下的着色器文件。",
+                        description = "修复因着色器语法不严谨在移动平台带来的不兼容问题",
                         onClick = {
                             navController.navigate(Screen.SHADER_FIXER_MOD_LIST.name)
                         }
@@ -73,7 +73,7 @@ fun InnerToolPage(
                     BuiltInToolCard(
                         icon = Icons.Default.LockOpen,
                         title = "去除版本限制",
-                        description = "去掉某个模组对前置模组的版本要求，只保留「必须存在」的检查。" +
+                        description = "去掉某个模组对前置模组的版本要求。" +
                                 "适用于前置模组版本号不够、但实际能正常使用的情况。",
                         onClick = {
                             navController.navigate(Screen.VERSION_LIMIT_MOD_LIST.name)

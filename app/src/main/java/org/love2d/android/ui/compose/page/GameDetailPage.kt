@@ -264,7 +264,7 @@ fun GameDetailPage(
                     InfoRow(
                         icon = Icons.Default.Build,
                         title = "内置工具",
-                        content = "着色器修复、去除版本限制",
+                        content = "一些实用工具",
                         onClick = {
                             // 内置工具要扫描模组目录，这里和「模组」入口一样先确保目录已创建
                             gameInfo?.let {

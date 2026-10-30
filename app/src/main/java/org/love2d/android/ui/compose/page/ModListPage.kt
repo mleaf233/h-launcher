@@ -32,13 +32,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShoppingBasket
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Source
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -46,6 +52,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -82,6 +90,28 @@ fun EnhancedModListPage(
     // FAB菜单状态
     var isFabMenuExpanded by remember { mutableStateOf(false) }
 
+    // 搜索与排序状态
+    var searchQuery by remember { mutableStateOf("") }
+    var sortKey by remember { mutableStateOf("name") }
+    var isShowSort by remember { mutableStateOf(false) }
+
+    // 模组数量不多，直接在内存里过滤+排序，不走数据库
+    val visibleMods = remember(modList, searchQuery, sortKey) {
+        val query = searchQuery.trim()
+        val filtered = if (query.isEmpty()) modList else modList.filter { mod ->
+            mod.name.contains(query, ignoreCase = true) ||
+                    mod.author.contains(query, ignoreCase = true) ||
+                    mod.from.contains(query, ignoreCase = true)
+        }
+        when (sortKey) {
+            "time" -> filtered.sortedByDescending { it.created_at }
+            "author" -> filtered.sortedWith(
+                compareBy({ it.author.lowercase() }, { it.name.lowercase() })
+            )
+            else -> filtered.sortedBy { it.name.lowercase() }
+        }
+    }
+
     // 处理返回键：如果菜单展开，按返回键先关闭菜单
     BackHandler(enabled = isFabMenuExpanded) {
         isFabMenuExpanded = false
@@ -89,29 +119,44 @@ fun EnhancedModListPage(
 
     Box(modifier = Modifier.fillMaxSize()) {
         // --- 1. 主要内容区域 ---
-        if (modList.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                // 假设 EmptyLottie 接受 onClick，如果不接受可以去掉外层的 clickable
-                EmptyLottie(emptyText = "暂未添加模组", isShowAdd = false) {}
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(
-                    top = 10.dp,
-                    start = 10.dp,
-                    end = 10.dp,
-                    bottom = 125.dp // 为 FAB 留出足够空间
-                ),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(modList.size) { index ->
-                    EnhancedModCard(
-                        modInfo = modList[index], onDelete = modDelete
-                    )
+        Column(modifier = Modifier.fillMaxSize()) {
+            ModListSearchHeader(
+                searchQuery = searchQuery,
+                onSearchChanged = { searchQuery = it },
+                sortKey = sortKey,
+                isShowSort = isShowSort,
+                onShowSortChange = { isShowSort = it },
+                onSortSelected = { sortKey = it }
+            )
+
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (visibleMods.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        EmptyLottie(
+                            emptyText = if (modList.isEmpty()) "暂未添加模组" else "没有匹配的模组",
+                            isShowAdd = false
+                        ) {}
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(
+                            top = 10.dp,
+                            start = 10.dp,
+                            end = 10.dp,
+                            bottom = 125.dp // 为 FAB 留出足够空间
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(visibleMods.size) { index ->
+                            EnhancedModCard(
+                                modInfo = visibleMods[index], onDelete = modDelete
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -212,6 +257,93 @@ fun EnhancedModListPage(
                     contentDescription = if (isFabMenuExpanded) "关闭菜单" else "打开菜单",
                     modifier = Modifier.rotate(rotation) // 使用 rotate 修饰符更流畅
                 )
+            }
+        }
+    }
+}
+
+/**
+ * 已安装模组的搜索 + 排序头部，样式与「下载列表」保持一致。
+ */
+@Composable
+private fun ModListSearchHeader(
+    searchQuery: String,
+    onSearchChanged: (String) -> Unit,
+    sortKey: String,
+    isShowSort: Boolean,
+    onShowSortChange: (Boolean) -> Unit,
+    onSortSelected: (String) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        TextField(
+            value = searchQuery,
+            onValueChange = onSearchChanged,
+            modifier = Modifier.weight(1f),
+            placeholder = { Text("搜索模组...") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "搜索") },
+            trailingIcon = {
+                if (searchQuery.isNotEmpty()) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = "清空",
+                        modifier = Modifier.clickable { onSearchChanged("") }
+                    )
+                }
+            },
+            shape = RoundedCornerShape(16.dp),
+            singleLine = true,
+            colors = TextFieldDefaults.colors(
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                disabledIndicatorColor = Color.Transparent,
+            )
+        )
+
+        Box {
+            IconButton(onClick = { onShowSortChange(true) }) {
+                Icon(Icons.Default.Sort, contentDescription = "排序")
+            }
+
+            DropdownMenu(
+                expanded = isShowSort,
+                onDismissRequest = { onShowSortChange(false) }
+            ) {
+                listOf(
+                    "name" to "按名称排序",
+                    "time" to "按安装时间排序",
+                    "author" to "按作者排序"
+                ).forEach { (key, label) ->
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = label,
+                                    color = if (key == sortKey) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurface
+                                )
+                                if (key == sortKey) {
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "已选中",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        },
+                        onClick = {
+                            onShowSortChange(false)
+                            onSortSelected(key)
+                        }
+                    )
+                }
             }
         }
     }
