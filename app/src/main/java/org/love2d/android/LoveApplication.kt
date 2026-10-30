@@ -2,7 +2,6 @@ package org.love2d.android
 
 import android.app.Application
 import android.util.Log
-import com.tencent.bugly.crashreport.CrashReport
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -54,7 +53,5 @@ class LoveApplication : Application() {
             ModDbUtil.init(appContext)
             GameManager.syncGamesWithDatabase(appContext.applicationContext)
         }
-
-        CrashReport.initCrashReport(applicationContext, "5863f1fa73", true)
     }
 }

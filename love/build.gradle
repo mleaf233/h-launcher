@@ -176,6 +176,5 @@ dependencies {
     // ML Kit Barcode Scanning
     api "com.google.mlkit:barcode-scanning:17.2.0"
 
-    api "com.tencent.bugly:crashreport:latest.release"
     api 'net.lingala.zip4j:zip4j:2.11.5'
 }
